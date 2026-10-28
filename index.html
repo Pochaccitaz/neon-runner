@@ -1,0 +1,519 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#090711">
+<title>NEON RUNNER | Arcade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --bg:#090711;
+  --purple:#bd79ff;
+  --green:#c5ff72;
+  --text:#f7f0ff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;background:
+  radial-gradient(ellipse at 50% 0%,#54217b40,transparent 55%),var(--bg);
+  color:var(--text);font-family:Inter,sans-serif;
+  display:flex;justify-content:center;align-items:center;padding:20px;
+}
+.app{width:min(960px,100%)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+.logo{font:900 clamp(18px,4vw,28px) Orbitron,sans-serif;letter-spacing:-1px}
+.logo span{color:var(--green)}
+.tag{font:600 10px Orbitron,sans-serif;letter-spacing:2px;color:var(--purple)}
+.intro{margin-bottom:17px}
+h1{font:900 clamp(27px,6vw,44px) Orbitron,sans-serif;margin:0 0 9px;letter-spacing:-2px}
+h1 span{color:var(--purple);text-shadow:0 0 25px #bd79ff65}
+.subtitle{color:#a69bb8;font-size:13px;line-height:1.7;margin:0}
+.game-shell{border:1px solid #392849;border-radius:18px;overflow:hidden;background:#0c0914;box-shadow:0 0 50px #7d32ad16}
+.hud{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:#110d1c;border-bottom:1px solid #30213f}
+.hud-label{font:600 9px Orbitron,sans-serif;letter-spacing:1.5px;color:#9d8bac}
+.hud-value{font:700 21px Orbitron,sans-serif;margin-top:5px}
+.hud-value.green{color:var(--green)}
+.hud-value.purple{color:var(--purple)}
+.canvas-wrap{position:relative}
+canvas{display:block;width:100%;height:auto;aspect-ratio:900/400;touch-action:manipulation;cursor:pointer}
+.overlay{
+ position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+ text-align:center;padding:20px;background:#090711b8;backdrop-filter:blur(3px);
+}
+.overlay.hidden{display:none}
+.overlay-content{max-width:400px}
+.overlay h2{font:900 clamp(23px,5vw,37px) Orbitron,sans-serif;margin:0 0 12px}
+.overlay h2 span{color:var(--green)}
+.overlay p{font-size:13px;color:#b9adc8;line-height:1.8;margin:0 0 22px}
+.btn{
+ border:0;border-radius:9px;padding:14px 24px;background:var(--green);
+ color:#15120b;font:900 12px Orbitron,sans-serif;letter-spacing:1px;
+ cursor:pointer;transition:transform .15s,filter .15s;
+}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid #30213f}
+.hint{font-size:11px;line-height:1.7;color:#a69bb8}
+.hint b{color:var(--purple)}
+.jump-btn{display:none;min-width:110px;padding:13px;background:#bd79ff;color:#130d1d}
+footer{text-align:center;color:#776b87;font-size:10px;margin-top:17px;line-height:1.8}
+footer span{color:var(--green)}
+@media(max-width:600px){
+ body{padding:13px}
+ header{margin-bottom:17px}
+ .tag{font-size:8px;letter-spacing:1px}
+ .hud{padding:12px}
+ .hud-value{font-size:16px}
+ .controls{padding:12px}
+ .hint{font-size:10px}
+ .jump-btn{display:block}
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="logo">NEON<span>RUNNER</span></div>
+    <div class="tag">◆ ARCADE SYSTEM</div>
+  </header>
+
+  <section class="intro">
+    <h1>RUN. <span>JUMP.</span> SURVIVE.</h1>
+    <p class="subtitle">A cidade apagou. O sistema enlouqueceu. Só tu pode escapar.<br>Desvia dos obstáculos e vê até onde consegue chegar.</p>
+  </section>
+
+  <section class="game-shell">
+    <div class="hud">
+      <div>
+        <div class="hud-label">PONTUAÇÃO</div>
+        <div class="hud-value green" id="score">00000</div>
+      </div>
+      <div>
+        <div class="hud-label">RECORDE</div>
+        <div class="hud-value purple" id="best">00000</div>
+      </div>
+      <div>
+        <div class="hud-label">VELOCIDADE</div>
+        <div class="hud-value" id="speed">1.0x</div>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="game" width="900" height="400" aria-label="Área do jogo Neon Runner"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="overlay-content">
+          <h2 id="overlayTitle">NEON <span>RUNNER</span></h2>
+          <p id="overlayText">Prepara teus reflexos.<br>Pula os blocos, sobrevive e bate teu recorde.</p>
+          <button class="btn" id="startBtn">▶ INICIAR JOGO</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="hint">
+        <b>ESPAÇO / ↑ / W</b> para pular<br>
+        <b>TOQUE NA TELA</b> no celular
+      </div>
+      <button class="btn jump-btn" id="jumpBtn">↑ PULAR</button>
+    </div>
+  </section>
+
+  <footer>NEON RUNNER <span>◆</span> Um jogo feito com HTML, CSS e JavaScript</footer>
+</main>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const speedEl = document.getElementById('speed');
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlayTitle');
+const overlayText = document.getElementById('overlayText');
+const startBtn = document.getElementById('startBtn');
+
+const W = canvas.width;
+const H = canvas.height;
+const ground = 330;
+
+let best = 0;
+try {
+  best = Number(localStorage.getItem('neonrunner-best')) || 0;
+} catch {}
+bestEl.textContent = String(best).padStart(5, '0');
+
+let running = false;
+let dead = false;
+let score = 0;
+let speed = 5;
+let frame = 0;
+let obstacles = [];
+let particles = [];
+let stars = [];
+let buildings = [];
+let lastTime = 0;
+let spawnTimer = 0;
+let animationId = 0;
+
+const player = {
+  x: 110, y: ground - 48, w: 34, h: 48,
+  vy: 0, jumping: false, runFrame: 0
+};
+
+function random(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function makeBackground() {
+  stars = Array.from({length:65}, () => ({
+    x:random(0,W),y:random(0,ground-20),
+    r:random(.5,1.8),alpha:random(.2,.8)
+  }));
+
+  buildings = [];
+  let x = 0;
+  while(x < W + 50) {
+    const width = random(35,85);
+    buildings.push({
+      x,width,height:random(65,190),
+      lights:Array.from({length:8},()=>({
+        x:random(5,width-8),y:random(5,140),
+        on:Math.random()>.45
+      }))
+    });
+    x += width + random(3,12);
+  }
+}
+makeBackground();
+
+function roundedRect(x,y,w,h,r,color) {
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+  ctx.fill();
+}
+
+function drawBackground() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#100a20');
+  sky.addColorStop(1,'#080a13');
+  ctx.fillStyle=sky;
+  ctx.fillRect(0,0,W,H);
+
+  const glow=ctx.createRadialGradient(640,180,5,640,180,260);
+  glow.addColorStop(0,'#55256c40');
+  glow.addColorStop(1,'#55256c00');
+  ctx.fillStyle=glow;
+  ctx.fillRect(0,0,W,H);
+
+  stars.forEach(s=>{
+    ctx.globalAlpha=s.alpha;
+    ctx.fillStyle='#e8d5ff';
+    ctx.fillRect(s.x,s.y,s.r,s.r);
+  });
+  ctx.globalAlpha=1;
+
+  buildings.forEach((b,i)=>{
+    const y=ground-b.height;
+    ctx.fillStyle=i%2?'#151025':'#110d1e';
+    ctx.fillRect(b.x,y,b.width,b.height);
+    ctx.fillStyle='#7c3dad';
+    ctx.fillRect(b.x,y,b.width,2);
+
+    b.lights.forEach(l=>{
+      if(l.on){
+        ctx.fillStyle='#bd79ff70';
+        ctx.fillRect(b.x+l.x,y+l.y,3,5);
+      }
+    });
+  });
+
+  // Neon moon
+  ctx.beginPath();
+  ctx.arc(735,83,27,0,Math.PI*2);
+  ctx.strokeStyle='#bd79ff75';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(735,83,20,0,Math.PI*2);
+  ctx.strokeStyle='#bd79ff25';
+  ctx.stroke();
+
+  // Ground
+  ctx.fillStyle='#11101a';
+  ctx.fillRect(0,ground,W,H-ground);
+  ctx.fillStyle='#c5ff72';
+  ctx.shadowColor='#c5ff72';
+  ctx.shadowBlur=12;
+  ctx.fillRect(0,ground,W,2);
+  ctx.shadowBlur=0;
+
+  ctx.strokeStyle='#39234d';
+  ctx.lineWidth=1;
+  for(let x=-(frame*speed*.8%60);x<W;x+=60){
+    ctx.beginPath();
+    ctx.moveTo(x,ground);
+    ctx.lineTo(x-30,H);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle='#271937';
+  for(let y=ground+20;y<H;y+=22){
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(W,y);
+    ctx.stroke();
+  }
+}
+
+function drawPlayer() {
+  const x=player.x,y=player.y;
+  const bob=running&&!player.jumping?Math.sin(frame*.35)*2:0;
+  const py=y+bob;
+
+  // Shadow
+  ctx.globalAlpha=Math.max(.15,1-(ground+10-(y+player.h))/80);
+  ctx.fillStyle='#000';
+  ctx.beginPath();
+  ctx.ellipse(x+17,ground+3,23,5,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha=1;
+
+  // Legs
+  const leg=running&&!player.jumping?Math.sin(frame*.4)*7:0;
+  ctx.strokeStyle='#c5ff72';
+  ctx.lineWidth=6;
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(x+12,py+34);
+  ctx.lineTo(x+10+leg,py+46);
+  ctx.moveTo(x+23,py+34);
+  ctx.lineTo(x+24-leg,py+46);
+  ctx.stroke();
+
+  // Body
+  ctx.shadowColor='#bd79ff';
+  ctx.shadowBlur=18;
+  roundedRect(x+5,py+12,26,26,7,'#9b56e8');
+  ctx.shadowBlur=0;
+
+  // Visor
+  roundedRect(x+8,py+17,20,8,3,'#c5ff72');
+  ctx.fillStyle='#171026';
+  ctx.fillRect(x+12,py+19,3,4);
+  ctx.fillRect(x+21,py+19,3,4);
+
+  // Backpack
+  roundedRect(x-2,py+18,8,15,3,'#6331a1');
+  ctx.fillStyle='#c5ff72';
+  ctx.fillRect(x+16,py+29,5,3);
+  ctx.lineCap='butt';
+}
+
+function spawnObstacle() {
+  const tall=Math.random()<.28;
+  const w=tall?random(25,35):random(25,44);
+  const h=tall?random(53,73):random(32,48);
+
+  obstacles.push({
+    x:W+20,y:ground-h,w,h,
+    color:Math.random()>.5?'#bd79ff':'#ff65bb',
+    passed:false
+  });
+}
+
+function createParticles(x,y,color,count=10) {
+  for(let i=0;i<count;i++){
+    particles.push({
+      x,y,
+      vx:random(-3,3),
+      vy:random(-4,1),
+      life:random(15,30),
+      max:30,
+      size:random(2,5),
+      color
+    });
+  }
+}
+
+function drawObstacles() {
+  obstacles.forEach(o=>{
+    ctx.save();
+    ctx.shadowColor=o.color;
+    ctx.shadowBlur=12;
+    roundedRect(o.x,o.y,o.w,o.h,4,'#20152e');
+    ctx.strokeStyle=o.color;
+    ctx.lineWidth=2;
+    ctx.strokeRect(o.x+1,o.y+1,o.w-2,o.h-2);
+    ctx.fillStyle=o.color;
+    ctx.fillRect(o.x+5,o.y+7,4,4);
+    ctx.fillRect(o.x+o.w-9,o.y+7,4,4);
+    ctx.restore();
+  });
+}
+
+function drawParticles() {
+  particles.forEach(p=>{
+    ctx.globalAlpha=Math.max(0,p.life/p.max);
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x,p.y,p.size,p.size);
+  });
+  ctx.globalAlpha=1;
+}
+
+function update(dt) {
+  if(!running)return;
+
+  frame += dt*.06;
+  score += dt*.012*speed;
+  speed = Math.min(12,5+score/500);
+
+  player.runFrame += dt*.06;
+  player.vy += .00085*dt;
+  player.y += player.vy*dt;
+
+  if(player.y+player.h>=ground){
+    player.y=ground-player.h;
+    player.vy=0;
+    player.jumping=false;
+  }
+
+  spawnTimer+=dt;
+  const spawnInterval=Math.max(620,1450-score*.35);
+  if(spawnTimer>spawnInterval){
+    spawnObstacle();
+    spawnTimer=0;
+  }
+
+  obstacles.forEach(o=>{
+    o.x-=speed*dt*.06;
+    if(!o.passed&&o.x+o.w<player.x){
+      o.passed=true;
+      createParticles(o.x,o.y,o.color,3);
+    }
+  });
+  obstacles=obstacles.filter(o=>o.x+o.w>-20);
+
+  particles.forEach(p=>{
+    p.x+=p.vx*dt*.06;
+    p.y+=p.vy*dt*.06;
+    p.vy+=.0003*dt;
+    p.life-=dt*.06;
+  });
+  particles=particles.filter(p=>p.life>0);
+
+  // Slightly forgiving collision box
+  const px=player.x+7, py=player.y+5;
+  const pw=player.w-14, ph=player.h-8;
+
+  for(const o of obstacles){
+    if(px<o.x+o.w-3&&px+pw>o.x+3&&py<o.y+o.h-2&&py+ph>o.y+3){
+      endGame();
+      break;
+    }
+  }
+
+  scoreEl.textContent=String(Math.floor(score)).padStart(5,'0');
+  speedEl.textContent=(speed/5).toFixed(1)+'x';
+}
+
+function draw() {
+  drawBackground();
+  drawParticles();
+  drawObstacles();
+  drawPlayer();
+}
+
+function loop(timestamp) {
+  if(!running)return;
+  const dt=Math.min(timestamp-lastTime||16,32);
+  lastTime=timestamp;
+  update(dt);
+  draw();
+  if(running)animationId=requestAnimationFrame(loop);
+}
+
+function jump() {
+  if(!running){
+    if(dead)return;
+    startGame();
+    return;
+  }
+  if(!player.jumping){
+    player.vy=-.48;
+    player.jumping=true;
+    createParticles(player.x+15,ground-3,'#c5ff72',5);
+  }
+}
+
+function startGame() {
+  cancelAnimationFrame(animationId);
+  score=0;
+  speed=5;
+  frame=0;
+  spawnTimer=0;
+  obstacles=[];
+  particles=[];
+  player.y=ground-player.h;
+  player.vy=0;
+  player.jumping=false;
+  running=true;
+  dead=false;
+  overlay.classList.add('hidden');
+  scoreEl.textContent='00000';
+  speedEl.textContent='1.0x';
+  lastTime=performance.now();
+  animationId=requestAnimationFrame(loop);
+}
+
+function endGame() {
+  running=false;
+  dead=true;
+  cancelAnimationFrame(animationId);
+  createParticles(player.x+17,player.y+22,'#ff65bb',22);
+
+  const finalScore=Math.floor(score);
+  let newRecord=false;
+  if(finalScore>best){
+    best=finalScore;
+    newRecord=true;
+    try{localStorage.setItem('neonrunner-best',String(best))}catch{}
+  }
+  bestEl.textContent=String(best).padStart(5,'0');
+
+  draw();
+  overlayTitle.innerHTML=newRecord?'NOVO <span>RECORDE!</span>':'GAME <span>OVER</span>';
+  overlayText.innerHTML=`Pontuação: <strong style="color:#c5ff72">${finalScore}</strong><br>${newRecord?'Tu superou teu recorde. LENDÁRIO!':'O sistema te pegou dessa vez.'}<br>Preparado para outra tentativa?`;
+  startBtn.textContent='↻ JOGAR NOVAMENTE';
+  overlay.classList.remove('hidden');
+}
+
+startBtn.addEventListener('click',startGame);
+document.getElementById('jumpBtn').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  jump();
+});
+
+canvas.addEventListener('pointerdown',e=>{
+  if(!overlay.classList.contains('hidden'))return;
+  e.preventDefault();
+  jump();
+});
+
+document.addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','KeyW'].includes(e.code)){
+    e.preventDefault();
+    if(e.repeat)return;
+    if(dead)return;
+    jump();
+  }
+  if(e.code==='Enter'&&dead)startGame();
+});
+
+draw();
+</script>
+</body>
+</html>
